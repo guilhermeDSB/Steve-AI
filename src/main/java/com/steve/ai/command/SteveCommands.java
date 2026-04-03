@@ -119,13 +119,12 @@ public class SteveCommands {
         SteveEntity steve = manager.getSteve(name);
         
         if (steve != null) {
-            // Disabled command feedback message
-            // source.sendSuccess(() -> Component.literal("Instructing " + name + ": " + command), true);
-            
-            new Thread(() -> {
-                steve.getActionExecutor().processNaturalLanguageCommand(command);
-            }).start();
-            
+            // processNaturalLanguageCommand starts an async LLM call internally and returns
+            // immediately, so it is safe — and required — to call it directly on the server
+            // thread. The previous new Thread() wrapper caused unsynchronised writes to
+            // ActionExecutor fields (isPlanning, planningFuture, pendingCommand) that are
+            // read on the game/server thread in tick(), producing data races.
+            steve.getActionExecutor().processNaturalLanguageCommand(command);
             return 1;
         } else {
             source.sendFailure(Component.literal("Steve not found: " + name));

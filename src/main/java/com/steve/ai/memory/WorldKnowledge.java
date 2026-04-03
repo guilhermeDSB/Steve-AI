@@ -27,6 +27,9 @@ public class WorldKnowledge {
     }
 
     private void scan() {
+        if (steve.level() == null || !steve.isAlive() || steve.isRemoved()) {
+            return;
+        }
         scanBiome();
         scanBlocks();
         scanEntities();
@@ -56,6 +59,10 @@ public class WorldKnowledge {
             for (int y = -scanRadius; y <= scanRadius; y += 2) {
                 for (int z = -scanRadius; z <= scanRadius; z += 2) {
                     BlockPos checkPos = stevePos.offset(x, y, z);
+                    // Skip unloaded chunks to avoid forcing chunk loads and NPEs
+                    if (!level.hasChunkAt(checkPos)) {
+                        continue;
+                    }
                     BlockState state = level.getBlockState(checkPos);
                     Block block = state.getBlock();
                     

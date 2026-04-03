@@ -45,19 +45,15 @@ public class CodeExecutionEngine {
         // Inject Steve API as the only bridge to Minecraft
         graalContext.getBindings("js").putMember("steve", steveAPI);
 
-        // Add console.log for debugging (optional)
-        String consolePolyfill = """
-            var console = {
-                log: function(...args) {
-                    java.lang.System.out.println('[Steve Code] ' + args.join(' '));
-                }
-            };
-            """;
-
+        // Provide a pure-JS console stub so LLM code can call console.log() without
+        // accessing any Java host classes (which are blocked by allowHostClassLookup).
+        // The stub discards output; a host-callback approach would require relaxing
+        // allowHostAccess, which widens the sandbox surface.
         try {
-            graalContext.eval("js", consolePolyfill);
+            graalContext.eval("js", "var console = { log: function() {}, warn: function() {}, error: function() {} };");
         } catch (PolyglotException e) {
-            // Silently fail if console setup fails
+            // Non-fatal: LLM code that calls console.log will get a ReferenceError,
+            // which is reported as a normal execution error rather than a sandbox escape.
         }
     }
 

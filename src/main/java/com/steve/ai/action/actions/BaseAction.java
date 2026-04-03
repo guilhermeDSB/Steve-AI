@@ -30,7 +30,9 @@ public abstract class BaseAction {
     public void cancel() {
         cancelled = true;
         result = ActionResult.failure("Action cancelled");
-        onCancel();
+        if (started) {
+            onCancel();
+        }
     }
 
     public boolean isComplete() {

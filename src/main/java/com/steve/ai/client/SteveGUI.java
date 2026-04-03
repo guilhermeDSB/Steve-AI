@@ -12,6 +12,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Side-mounted GUI panel for Steve agent interaction.
@@ -31,8 +32,10 @@ public class SteveGUI {
     private static List<String> commandHistory = new ArrayList<>();
     private static int historyIndex = -1;
     
-    // Message history and scrolling
-    private static List<ChatMessage> messages = new ArrayList<>();
+    // Message history and scrolling.
+    // CopyOnWriteArrayList lets the server thread (ActionExecutor.sendToGUI) add
+    // messages safely while the render thread iterates the list simultaneously.
+    private static final List<ChatMessage> messages = new CopyOnWriteArrayList<>();
     private static int scrollOffset = 0;
     private static int maxScroll = 0;
     private static final int BACKGROUND_COLOR = 0x15202020; // Ultra transparent (15 = ~8% opacity)
@@ -100,7 +103,9 @@ public class SteveGUI {
      */
     public static void addMessage(String sender, String text, int bubbleColor, boolean isUser) {
         messages.add(new ChatMessage(sender, text, bubbleColor, isUser));
-        if (messages.size() > MAX_MESSAGES) {
+        // Trim oldest messages when the limit is exceeded. CopyOnWriteArrayList.remove(0)
+        // is O(n) but MAX_MESSAGES is small (500), and adds are infrequent compared to reads.
+        while (messages.size() > MAX_MESSAGES) {
             messages.remove(0);
         }
         // Auto-scroll to bottom on new message

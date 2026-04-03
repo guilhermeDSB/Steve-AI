@@ -11,28 +11,36 @@ import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 @Mod.EventBusSubscriber(modid = SteveMod.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class ServerEventHandler {
-    private static boolean stevesSpawned = false;
+    // AtomicBoolean prevents a race condition where two players log in concurrently
+    // and both see stevesSpawned == false, resulting in duplicate spawn waves.
+    // compareAndSet ensures only the first thread proceeds.
+    private static final AtomicBoolean stevesSpawned = new AtomicBoolean(false);
 
     @SubscribeEvent
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             ServerLevel level = (ServerLevel) player.level();
             SteveManager manager = SteveMod.getSteveManager();
-            if (!stevesSpawned) {                manager.clearAllSteves();
+            if (stevesSpawned.compareAndSet(false, true)) {
+                manager.clearAllSteves();
                 
                 // Clear structure registry for fresh spatial awareness
                 StructureRegistry.clear();
                 
-                // Then, remove ALL SteveEntity instances from the world (including ones loaded from NBT)
+                // Remove ALL SteveEntity instances from the world (including ones loaded from NBT)
                 int removedCount = 0;
                 for (var entity : level.getAllEntities()) {
                     if (entity instanceof SteveEntity) {
                         entity.discard();
                         removedCount++;
                     }
-                }                Vec3 playerPos = player.position();
+                }
+
+                Vec3 playerPos = player.position();
                 Vec3 lookVec = player.getLookAngle();
                 
                 String[] names = {"Steve", "Alex", "Bob", "Charlie"};
@@ -47,17 +55,15 @@ public class ServerEventHandler {
                         playerPos.z + offsetZ
                     );
                     
-                    SteveEntity steve = manager.spawnSteve(level, spawnPos, names[i]);
-                    if (steve != null) {                    }
+                    manager.spawnSteve(level, spawnPos, names[i]);
                 }
-                
-                stevesSpawned = true;            }
+            }
         }
     }
 
     @SubscribeEvent
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
-        stevesSpawned = false;
+        stevesSpawned.set(false);
     }
 }
 

@@ -38,11 +38,14 @@ public class GeminiClient {
         }
 
         JsonObject requestBody = buildRequestBody(systemPrompt, userPrompt);
-        String urlWithKey = GEMINI_API_URL + "?key=" + apiKey;
-        
+
+        // Pass the key as a header instead of a URL query parameter so it is
+        // never embedded in the request URI and cannot appear in HTTP-level logs
+        // or exception stack traces.
         HttpRequest request = HttpRequest.newBuilder()
-            .uri(URI.create(urlWithKey))
+            .uri(URI.create(GEMINI_API_URL))
             .header("Content-Type", "application/json")
+            .header("x-goog-api-key", apiKey)
             .timeout(Duration.ofSeconds(60))
             .POST(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
             .build();
@@ -52,7 +55,10 @@ public class GeminiClient {
             
             if (response.statusCode() != 200) {
                 SteveMod.LOGGER.error("Gemini API request failed: {}", response.statusCode());
-                SteveMod.LOGGER.error("Response body: {}", response.body());
+                // Log only a truncated body — never include the API key
+                String body = response.body();
+                SteveMod.LOGGER.error("Response body: {}",
+                    body != null && body.length() > 500 ? body.substring(0, 500) + "..." : body);
                 return null;
             }
 
@@ -72,20 +78,27 @@ public class GeminiClient {
 
     private JsonObject buildRequestBody(String systemPrompt, String userPrompt) {
         JsonObject body = new JsonObject();
-        
-        // Gemini uses "contents" array with "parts"
-        JsonArray contents = new JsonArray();
-        
-        // System instruction (Gemini 1.5+ format)
-        JsonObject systemContent = new JsonObject();
-        systemContent.addProperty("role", "user");
+
+        // Use the dedicated system_instruction field so the model treats the
+        // system context with appropriate weight, separate from the user turn.
+        JsonObject systemInstruction = new JsonObject();
         JsonArray systemParts = new JsonArray();
         JsonObject systemPart = new JsonObject();
-        systemPart.addProperty("text", systemPrompt + "\n\n" + userPrompt);
+        systemPart.addProperty("text", systemPrompt);
         systemParts.add(systemPart);
-        systemContent.add("parts", systemParts);
-        contents.add(systemContent);
-        
+        systemInstruction.add("parts", systemParts);
+        body.add("system_instruction", systemInstruction);
+
+        // User message
+        JsonArray contents = new JsonArray();
+        JsonObject userContent = new JsonObject();
+        userContent.addProperty("role", "user");
+        JsonArray userParts = new JsonArray();
+        JsonObject userPartObj = new JsonObject();
+        userPartObj.addProperty("text", userPrompt);
+        userParts.add(userPartObj);
+        userContent.add("parts", userParts);
+        contents.add(userContent);
         body.add("contents", contents);
         
         JsonObject generationConfig = new JsonObject();

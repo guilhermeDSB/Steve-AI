@@ -206,11 +206,17 @@ public class ActionExecutor {
     }
     
     /**
-     * Send a message to the GUI pane (client-side only, no chat spam)
+     * Send a message to the GUI pane when on the client side, or as a chat
+     * message to all players when on the server side.
+     *
+     * The original code checked level().isClientSide, which is always false on
+     * the server, causing all planning feedback to be silently dropped.
      */
     private void sendToGUI(String steveName, String message) {
         if (steve.level().isClientSide) {
             com.steve.ai.client.SteveGUI.addSteveMessage(steveName, message);
+        } else if (SteveConfig.ENABLE_CHAT_RESPONSES.get()) {
+            steve.sendChatMessage(message);
         }
     }
 

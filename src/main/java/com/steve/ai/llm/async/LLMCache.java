@@ -216,10 +216,10 @@ public class LLMCache {
      */
     public void logStats() {
         CacheStats stats = getStats();
-        LOGGER.info("LLM Cache Stats - Size: ~{}/{}, Hit Rate: {:.2f}%, Hits: {}, Misses: {}, Evictions: {}",
+        LOGGER.info("LLM Cache Stats - Size: ~{}/{}, Hit Rate: {}%, Hits: {}, Misses: {}, Evictions: {}",
             size(),
             MAX_CACHE_SIZE,
-            stats.hitRate() * 100,
+            String.format("%.2f", stats.hitRate() * 100),
             stats.hitCount(),
             stats.missCount(),
             stats.evictionCount()

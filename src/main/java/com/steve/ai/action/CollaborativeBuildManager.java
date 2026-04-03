@@ -117,6 +117,9 @@ public class CollaborativeBuildManager {
         }
         
         public int getProgressPercentage() {
+            if (buildPlan.isEmpty()) {
+                return 100;
+            }
             return (getBlocksPlaced() * 100) / buildPlan.size();
         }
     }
@@ -199,10 +202,10 @@ public class CollaborativeBuildManager {
         BlockPlacement block = section.getNextBlock();
         
         if (block == null) {
-            if (sectionIndex != null) {
-                section = build.sections.get(sectionIndex);
-                block = section.getNextBlock();
-                if (block != null) {                }
+            // Current section is exhausted; try to find another incomplete section
+            Integer newSectionIndex = assignSteveToSection(build, steveName);
+            if (newSectionIndex != null) {
+                block = build.sections.get(newSectionIndex).getNextBlock();
             }
         }
         

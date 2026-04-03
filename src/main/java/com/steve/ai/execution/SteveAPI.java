@@ -297,12 +297,17 @@ public class SteveAPI {
     }
 
     /**
-     * Wait for a duration (in milliseconds)
-     * NOTE: This is implemented as a busy-wait for simplicity
-     * @param milliseconds Time to wait
+     * Pause execution for a duration (in milliseconds).
+     *
+     * Named "pause" rather than "wait" to avoid shadowing Object.wait(long),
+     * which is a Java monitor primitive and would cause confusing behaviour if
+     * called from another Java thread.
+     *
+     * NOTE: This sleeps the GraalVM JS thread, not the game thread.
+     * @param milliseconds Time to sleep (max 30 000 ms)
      */
-    public void wait(int milliseconds) throws InterruptedException {
-        if (milliseconds > 0 && milliseconds < 30000) {  // Max 30 seconds
+    public void pause(int milliseconds) throws InterruptedException {
+        if (milliseconds > 0 && milliseconds < 30000) {
             Thread.sleep(milliseconds);
         }
     }
