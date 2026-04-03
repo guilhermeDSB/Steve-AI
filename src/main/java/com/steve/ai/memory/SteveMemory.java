@@ -48,9 +48,19 @@ public class SteveMemory {
         return result;
     }
 
+    /**
+     * Clears the current goal stored in memory.
+     *
+     * <p>The actual task queue lives in {@link com.steve.ai.action.ActionExecutor}.
+     * This method is kept for backward compatibility with callers such as
+     * {@code SteveCommands.stopSteve()} that call both
+     * {@code stopCurrentAction()} and this method together.</p>
+     *
+     * @deprecated Use {@code ActionExecutor.stopCurrentAction()} to fully stop
+     *             execution; this method only resets the remembered goal string.
+     */
+    @Deprecated
     public void clearTaskQueue() {
-        // The actual task queue lives in ActionExecutor; this method clears the
-        // current goal stored in memory (kept for API compatibility with SteveCommands).
         currentGoal = "";
     }
 

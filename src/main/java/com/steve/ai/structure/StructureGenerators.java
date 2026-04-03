@@ -13,6 +13,9 @@ import java.util.List;
  */
 public class StructureGenerators {
 
+    /** Half-width of the castle gate opening (total width = 2 * GATE_HALF_WIDTH + 1 = 3 blocks). */
+    private static final int GATE_HALF_WIDTH = 1;
+
     public static List<BlockPlacement> generate(String structureType, BlockPos start, int width, int height, int depth, List<Block> materials) {
         return switch (structureType.toLowerCase()) {
             case "house", "home" -> buildAdvancedHouse(start, width, height, depth, materials);
@@ -87,7 +90,7 @@ public class StructureGenerators {
         int roofStartHeight = height + 1;
         int roofLayers = Math.max(width, depth) / 2 + 1;
 
-        for (int layer = 0; layer < roofLayers && width - 2 * layer > 1 && depth - 2 * layer > 1; layer++) {
+        for (int layer = 0; layer < roofLayers && hasValidPerimeter(width, depth, layer); layer++) {
             int currentHeight = roofStartHeight + layer;
             int inset = layer;
 
@@ -120,7 +123,7 @@ public class StructureGenerators {
                     // Gate opening: a 3-block-wide, 3-block-tall archway in the front wall.
                     // We skip placing any block here so the existing terrain shows through
                     // (placing AIR would destroy terrain blocks that were there first).
-                    boolean isGateColumn = (x >= width / 2 - 1 && x <= width / 2 + 1);
+                    boolean isGateColumn = (x >= width / 2 - GATE_HALF_WIDTH && x <= width / 2 + GATE_HALF_WIDTH);
                     boolean isGateRow    = (z == 0 && y >= 1 && y <= 3);
                     if (isGateColumn && isGateRow) {
                         continue; // leave the opening empty
@@ -365,5 +368,13 @@ public class StructureGenerators {
         }
 
         return blocks;
+    }
+
+    /**
+     * Returns true when the pyramid roof layer still has a valid (>1-block-wide)
+     * perimeter for both the x and z dimensions at the given inset depth.
+     */
+    private static boolean hasValidPerimeter(int width, int depth, int layer) {
+        return width - 2 * layer > 1 && depth - 2 * layer > 1;
     }
 }

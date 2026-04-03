@@ -55,7 +55,10 @@ public class ServerEventHandler {
                         playerPos.z + offsetZ
                     );
                     
-                    manager.spawnSteve(level, spawnPos, names[i]);
+                    SteveEntity steve = manager.spawnSteve(level, spawnPos, names[i]);
+                    if (steve == null) {
+                        SteveMod.LOGGER.warn("Failed to spawn Steve agent '{}'", names[i]);
+                    }
                 }
             }
         }
