@@ -64,8 +64,12 @@ public class SteveManager {
     public boolean removeSteve(String name) {
         SteveEntity steve = activeSteves.remove(name);
         if (steve != null) {
+            // Stop any running action/planning futures before discarding the entity
+            // to prevent callbacks from accessing a dead entity reference.
+            steve.getActionExecutor().stopCurrentAction();
             stevesByUUID.remove(steve.getUUID());
-            steve.discard();            return true;
+            steve.discard();
+            return true;
         }
         return false;
     }
@@ -73,10 +77,12 @@ public class SteveManager {
     public void clearAllSteves() {
         SteveMod.LOGGER.info("Clearing {} Steve entities", activeSteves.size());
         for (SteveEntity steve : activeSteves.values()) {
+            steve.getActionExecutor().stopCurrentAction();
             steve.discard();
         }
         activeSteves.clear();
-        stevesByUUID.clear();    }
+        stevesByUUID.clear();
+    }
 
     public Collection<SteveEntity> getAllSteves() {
         return Collections.unmodifiableCollection(activeSteves.values());

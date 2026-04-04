@@ -42,7 +42,9 @@ public class ResponseParser {
                 }
             }
             
-            if (!reasoning.isEmpty()) {            }
+            if (!reasoning.isEmpty()) {
+                SteveMod.LOGGER.debug("AI reasoning: {}", reasoning);
+            }
             
             return new ParsedResponse(reasoning, plan, tasks);
             
@@ -67,10 +69,10 @@ public class ResponseParser {
         
         cleaned = cleaned.trim();
         
-        // Fix common JSON formatting issues
-        cleaned = cleaned.replaceAll("\\n\\s*", " ");
-        
-        // Fix missing commas between array/object elements (common AI mistake)
+        // Fix missing commas between array/object elements (common AI mistake).
+        // We deliberately do NOT collapse newlines here: stripping all \n from
+        // JSON string values corrupts multi-line "plan" text and can break the
+        // regex replacements that follow.
         cleaned = cleaned.replaceAll("}\\s+\\{", "},{");
         cleaned = cleaned.replaceAll("}\\s+\\[", "},[");
         cleaned = cleaned.replaceAll("]\\s+\\{", "],{");

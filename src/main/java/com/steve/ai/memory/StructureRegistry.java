@@ -6,12 +6,15 @@ import net.minecraft.world.phys.AABB;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Tracks all built structures to prevent overlapping builds
  */
 public class StructureRegistry {
-    private static final List<BuiltStructure> structures = new ArrayList<>();
+    // CopyOnWriteArrayList allows multiple Steve threads to read/register structures
+    // concurrently without ConcurrentModificationException.
+    private static final List<BuiltStructure> structures = new CopyOnWriteArrayList<>();
     private static final int MIN_SPACING = 5; // Minimum blocks between structures
     
     public static class BuiltStructure {

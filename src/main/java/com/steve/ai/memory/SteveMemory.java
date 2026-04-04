@@ -8,19 +8,16 @@ import net.minecraft.nbt.StringTag;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
 
 public class SteveMemory {
     private final SteveEntity steve;
     private String currentGoal;
-    private final Queue<String> taskQueue;
     private final LinkedList<String> recentActions;
     private static final int MAX_RECENT_ACTIONS = 20;
 
     public SteveMemory(SteveEntity steve) {
         this.steve = steve;
         this.currentGoal = "";
-        this.taskQueue = new LinkedList<>();
         this.recentActions = new LinkedList<>();
     }
 
@@ -51,8 +48,19 @@ public class SteveMemory {
         return result;
     }
 
+    /**
+     * Clears the current goal stored in memory.
+     *
+     * <p>The actual task queue lives in {@link com.steve.ai.action.ActionExecutor}.
+     * This method is kept for backward compatibility with callers such as
+     * {@code SteveCommands.stopSteve()} that call both
+     * {@code stopCurrentAction()} and this method together.</p>
+     *
+     * @deprecated Use {@code ActionExecutor.stopCurrentAction()} to fully stop
+     *             execution; this method only resets the remembered goal string.
+     */
+    @Deprecated
     public void clearTaskQueue() {
-        taskQueue.clear();
         currentGoal = "";
     }
 

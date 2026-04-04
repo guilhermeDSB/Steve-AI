@@ -13,6 +13,9 @@ import java.util.List;
  */
 public class StructureGenerators {
 
+    /** Half-width of the castle gate opening (total width = 2 * GATE_HALF_WIDTH + 1 = 3 blocks). */
+    private static final int GATE_HALF_WIDTH = 1;
+
     public static List<BlockPlacement> generate(String structureType, BlockPos start, int width, int height, int depth, List<Block> materials) {
         return switch (structureType.toLowerCase()) {
             case "house", "home" -> buildAdvancedHouse(start, width, height, depth, materials);
@@ -83,11 +86,11 @@ public class StructureGenerators {
             }
         }
 
-        // Pyramid roof
+        // Pyramid roof — stop when the inset would collapse the perimeter to ≤1 block
         int roofStartHeight = height + 1;
         int roofLayers = Math.max(width, depth) / 2 + 1;
 
-        for (int layer = 0; layer < roofLayers; layer++) {
+        for (int layer = 0; layer < roofLayers && hasValidPerimeter(width, depth, layer); layer++) {
             int currentHeight = roofStartHeight + layer;
             int inset = layer;
 
@@ -98,10 +101,6 @@ public class StructureGenerators {
                         blocks.add(new BlockPlacement(start.offset(x, currentHeight, z), roofMaterial));
                     }
                 }
-            }
-
-            if (width - 2 * inset <= 1 || depth - 2 * inset <= 1) {
-                break;
             }
         }
 
@@ -121,14 +120,19 @@ public class StructureGenerators {
                     boolean isEdge = (x == 0 || x == width - 1 || z == 0 || z == depth - 1);
                     boolean isCorner = (x <= 2 || x >= width - 3) && (z <= 2 || z >= depth - 3);
 
+                    // Gate opening: a 3-block-wide, 3-block-tall archway in the front wall.
+                    // We skip placing any block here so the existing terrain shows through
+                    // (placing AIR would destroy terrain blocks that were there first).
+                    boolean isGateColumn = (x >= width / 2 - GATE_HALF_WIDTH && x <= width / 2 + GATE_HALF_WIDTH);
+                    boolean isGateRow    = (z == 0 && y >= 1 && y <= 3);
+                    if (isGateColumn && isGateRow) {
+                        continue; // leave the opening empty
+                    }
+
                     if (y == 0) {
                         blocks.add(new BlockPlacement(start.offset(x, y, z), stoneMaterial));
                     } else if (isEdge && !isCorner) {
-                        if (x == width / 2 && z == 0 && y <= 3) {
-                            if (y >= 1 && y <= 3 && x >= width / 2 - 1 && x <= width / 2 + 1) {
-                                blocks.add(new BlockPlacement(start.offset(x, y, 0), Blocks.AIR));
-                            }
-                        } else if (y % 4 == 2 && !isCorner) {
+                        if (y % 4 == 2 && !isCorner) {
                             blocks.add(new BlockPlacement(start.offset(x, y, z), windowMaterial));
                         } else {
                             blocks.add(new BlockPlacement(start.offset(x, y, z), wallMaterial));
@@ -364,5 +368,13 @@ public class StructureGenerators {
         }
 
         return blocks;
+    }
+
+    /**
+     * Returns true when the pyramid roof layer still has a valid (>1-block-wide)
+     * perimeter for both the x and z dimensions at the given inset depth.
+     */
+    private static boolean hasValidPerimeter(int width, int depth, int layer) {
+        return width - 2 * layer > 1 && depth - 2 * layer > 1;
     }
 }
